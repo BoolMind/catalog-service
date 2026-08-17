@@ -1,0 +1,39 @@
+{
+  "name": "catalog-service",
+  "version": "1.0.0",
+  "description": "Catalog Microservice",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "nest build",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:debug": "nest start --debug --watch",
+    "start:prod": "node dist/main",
+    "lint": "eslint \"{src,test}/**/*.ts\"",
+    "proto:generate": "buf generate ../ecommerce-contracts && buf build ../ecommerce-contracts -o ../ecommerce-contracts/descriptor.binpb",
+    "migration:create": "typeorm-ts-node-commonjs migration:create src/database/migrations",
+    "migration:generate": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate src/database/migrations/InitialCatalogSchema -d src/database/data-source.ts",
+    "migration:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d src/database/data-source.ts",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/database/data-source.ts"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.13.0",
+    "@bufbuild/protovalidate": "^1.2.0",
+    "@ecommerce/common": "file:../common/ecommerce-common-1.0.0.tgz",
+    "@ecommerce/contracts": "file:../ecommerce-contracts/ecommerce-contracts-1.0.0.tgz",
+    "@nestjs/config": "^4.0.4",
+    "@nestjs/typeorm": "^11.0.3",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "joi": "^18.2.3",
+    "mysql2": "^3.23.2",
+    "typeorm": "^0.3.31"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.24",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^6.0.3"
+  }
+}

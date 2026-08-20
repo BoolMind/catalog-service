@@ -22,8 +22,9 @@
     "@bufbuild/protobuf": "^2.13.0",
     "@bufbuild/protovalidate": "^1.2.0",
     "@ecommerce/common": "file:../common/ecommerce-common-1.0.0.tgz",
-    "@ecommerce/contracts": "file:../ecommerce-contracts/ecommerce-contracts-1.0.0.tgz",
+    "@ecommerce/contracts": "file:../ecommerce-contracts/ecommerce-contracts-1.1.0.tgz",
     "@nestjs/config": "^4.0.4",
+    "@nestjs/platform-express": "^11.2.1",
     "@nestjs/typeorm": "^11.0.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
@@ -33,6 +34,8 @@
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.24",
+    "@types/node": "^26.2.0",
+    "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^6.0.3"
   }

@@ -29,6 +29,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         logging: configService.get<boolean>('database.logging'),
 
         migrations: ['dist/database/migrations/*.js'],
+        migrationsRun: true,
       }),
     }),
   ],

@@ -14,7 +14,7 @@ import { Category } from '../../categories/entities';
 export class Product extends AppBaseEntity {
   @Column({
     type: 'varchar',
-    length: 255,
+    length: 150,
   })
   @Index()
   name!: string;
@@ -35,10 +35,6 @@ export class Product extends AppBaseEntity {
     },
   })
   price!: number;
-  @Column({ type: 'int', default: 0 })
-  totalStock!: number;
-  @Column({ type: 'int', default: 0 })
-  reservedStock!: number;
 
   @Column({
     type: 'int',
@@ -65,8 +61,4 @@ export class Product extends AppBaseEntity {
     name: 'categoryId',
   })
   category!: Category;
-
-  get availableStock(): number {
-    return this.totalStock - this.reservedStock;
-  }
 }

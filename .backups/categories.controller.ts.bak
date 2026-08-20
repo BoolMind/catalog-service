@@ -1,11 +1,5 @@
-import { UseFilters, UseInterceptors } from '@nestjs/common';
-
+import { GrpcController } from '@ecommerce/common';
 import {
-  GrpcController,
-  GrpcExceptionFilter,
-  GrpcLoggingInterceptor,
-  GrpcValidationInterceptor,
-  ValidateGrpc,
   toGrpcDeleteResponse,
   toGrpcPageMeta,
 } from '@ecommerce/common';
@@ -32,15 +26,12 @@ import { SortOrder } from '@ecommerce/contracts/generated/ecommerce/common/v1/co
 import { CategoriesService } from './categories.service';
 import { categoryToGrpc } from './mappers/categories.mapper';
 
-@UseFilters(GrpcExceptionFilter)
-@UseInterceptors(GrpcLoggingInterceptor, GrpcValidationInterceptor)
 @GrpcController('CategoryService')
 export class CategoriesController {
   constructor(
     private readonly categoriesService: CategoriesService,
   ) {}
 
-  @ValidateGrpc('ecommerce.catalog.v1.CategoryServiceCreateRequest')
   async create(
     request: CategoryServiceCreateRequest,
   ): Promise<CategoryServiceCreateResponse> {
@@ -51,7 +42,6 @@ export class CategoriesController {
     };
   }
 
-  @ValidateGrpc('ecommerce.catalog.v1.CategoryServiceGetByIdRequest')
   async getById(
     request: CategoryServiceGetByIdRequest,
   ): Promise<CategoryServiceGetByIdResponse> {
@@ -63,7 +53,6 @@ export class CategoriesController {
     };
   }
 
-  @ValidateGrpc('ecommerce.catalog.v1.CategoryServiceFindAllRequest')
   async findAll(
     _request: CategoryServiceFindAllRequest,
   ): Promise<CategoryServiceFindAllResponse> {
@@ -75,7 +64,6 @@ export class CategoriesController {
     };
   }
 
-  @ValidateGrpc('ecommerce.catalog.v1.CategoryServiceUpdateRequest')
   async update(
     request: CategoryServiceUpdateRequest,
   ): Promise<CategoryServiceUpdateResponse> {
@@ -89,16 +77,14 @@ export class CategoriesController {
     };
   }
 
-  @ValidateGrpc('ecommerce.catalog.v1.CategoryServiceDeleteRequest')
   async delete(
-    request: CategoryServiceDeleteRequest,
-  ): Promise<CategoryServiceDeleteResponse> {
-    await this.categoriesService.softDelete(request.id);
+  request: CategoryServiceDeleteRequest,
+): Promise<CategoryServiceDeleteResponse> {
+  await this.categoriesService.softDelete(request.id);
 
-    return toGrpcDeleteResponse();
-  }
+  return toGrpcDeleteResponse();
+}
 
-  @ValidateGrpc('ecommerce.catalog.v1.CategoryServiceRestoreRequest')
   async restore(
     request: CategoryServiceRestoreRequest,
   ): Promise<CategoryServiceRestoreResponse> {
@@ -110,7 +96,6 @@ export class CategoriesController {
     };
   }
 
-  @ValidateGrpc('ecommerce.catalog.v1.CategoryServicePaginateRequest')
   async paginate(
     request: CategoryServicePaginateRequest,
   ): Promise<CategoryServicePaginateResponse> {

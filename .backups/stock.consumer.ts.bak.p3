@@ -1,0 +1,54 @@
+import { Controller, Logger, UseFilters, UseInterceptors } from '@nestjs/common';
+import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
+import {
+  RpcExceptionFilter,
+  STOCK_RELEASE_QUEUE,
+  STOCK_RESERVE_QUEUE,
+  TracingInterceptor,
+} from '@ecommerce/common';
+import { StockService, StockReserveItem, StockReserveResult } from '../../catalog/products/stock.service';
+
+export interface StockReserveRequest {
+  orderId: string;
+  items: StockReserveItem[];
+}
+
+export interface StockReleaseRequest {
+  orderId: string;
+}
+
+/**
+ * ACK SEMANTICS: noAck: false on this queue (set in common's
+ * rabbitmq.config.ts) means Nest auto-ACKs only once the handler
+ * resolves, and NACKs (-> DLQ, via the DLX already configured on this
+ * queue) if it throws. So: infrastructure failures (DB down, unexpected
+ * exception inside StockService) MUST throw -- returning a value acks
+ * the message even though nothing was processed. {success:false} is
+ * reserved for legitimate BUSINESS outcomes (not enough stock, unknown
+ * product) -- those still ack, since retrying an honest "out of stock"
+ * answer will never produce more stock.
+ *
+ * RpcExceptionFilter/TracingInterceptor applied locally, not globally --
+ * see app.module.ts for why the Grpc-specific ones stay scoped to gRPC
+ * controllers only.
+ */
+@Controller()
+@UseFilters(RpcExceptionFilter)
+@UseInterceptors(TracingInterceptor)
+export class StockConsumerController {
+  private readonly logger = new Logger(StockConsumerController.name);
+
+  constructor(private readonly stockService: StockService) {}
+
+  @MessagePattern(STOCK_RESERVE_QUEUE)
+  async reserveStock(@Payload() data: StockReserveRequest): Promise<StockReserveResult> {
+    this.logger.log(`stock.reserve for order ${data.orderId}: ${JSON.stringify(data.items)}`);
+    return this.stockService.reserve(data.orderId, data.items);
+  }
+
+  @EventPattern(STOCK_RELEASE_QUEUE)
+  async releaseStock(@Payload() data: StockReleaseRequest): Promise<void> {
+    this.logger.log(`stock.release for order ${data.orderId}`);
+    await this.stockService.release(data.orderId);
+  }
+}

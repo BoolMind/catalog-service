@@ -1,14 +1,5 @@
-import { UseFilters, UseInterceptors } from '@nestjs/common';
-
-import {
-  GrpcController,
-  GrpcExceptionFilter,
-  GrpcLoggingInterceptor,
-  GrpcValidationInterceptor,
-  ValidateGrpc,
-  toGrpcDeleteResponse,
-  toGrpcPageMeta,
-} from '@ecommerce/common';
+import { GrpcController } from '@ecommerce/common';
+import { toGrpcDeleteResponse, toGrpcPageMeta } from '@ecommerce/common';
 
 import {
   ProductServiceCreateRequest,
@@ -32,15 +23,12 @@ import {
 import { ProductsService } from './products.service';
 import { productToGrpc } from './mappers/products.mapper';
 
-@UseFilters(GrpcExceptionFilter)
-@UseInterceptors(GrpcLoggingInterceptor, GrpcValidationInterceptor)
 @GrpcController('ProductService')
 export class ProductsController {
   constructor(
     private readonly productsService: ProductsService,
   ) {}
 
-  @ValidateGrpc('ecommerce.catalog.v1.ProductServiceCreateRequest')
   async create(
     request: ProductServiceCreateRequest,
   ): Promise<ProductServiceCreateResponse> {
@@ -51,7 +39,6 @@ export class ProductsController {
     };
   }
 
-  @ValidateGrpc('ecommerce.catalog.v1.ProductServiceGetByIdRequest')
   async getById(
     request: ProductServiceGetByIdRequest,
   ): Promise<ProductServiceGetByIdResponse> {
@@ -64,7 +51,6 @@ export class ProductsController {
     };
   }
 
-  @ValidateGrpc('ecommerce.catalog.v1.ProductServiceUpdateRequest')
   async update(
     request: ProductServiceUpdateRequest,
   ): Promise<ProductServiceUpdateResponse> {
@@ -77,16 +63,14 @@ export class ProductsController {
     };
   }
 
-  @ValidateGrpc('ecommerce.catalog.v1.ProductServiceDeleteRequest')
   async delete(
-    request: ProductServiceDeleteRequest,
-  ): Promise<ProductServiceDeleteResponse> {
-    await this.productsService.softDelete(request.id);
+  request: ProductServiceDeleteRequest,
+): Promise<ProductServiceDeleteResponse> {
+  await this.productsService.softDelete(request.id);
 
-    return toGrpcDeleteResponse();
-  }
+  return toGrpcDeleteResponse();
+}
 
-  @ValidateGrpc('ecommerce.catalog.v1.ProductServiceRestoreRequest')
   async restore(
     request: ProductServiceRestoreRequest,
   ): Promise<ProductServiceRestoreResponse> {
@@ -99,7 +83,6 @@ export class ProductsController {
     };
   }
 
-  @ValidateGrpc('ecommerce.catalog.v1.ProductServicePaginateRequest')
   async paginate(
     request: ProductServicePaginateRequest,
   ): Promise<ProductServicePaginateResponse> {
@@ -122,7 +105,6 @@ export class ProductsController {
     };
   }
 
-  @ValidateGrpc('ecommerce.catalog.v1.ProductServiceFindByCategoryRequest')
   async findByCategory(
     request: ProductServiceFindByCategoryRequest,
   ): Promise<ProductServiceFindByCategoryResponse> {
@@ -135,7 +117,6 @@ export class ProductsController {
     };
   }
 
-  @ValidateGrpc('ecommerce.catalog.v1.ProductServiceFindByUserRequest')
   async findByUser(
     request: ProductServiceFindByUserRequest,
   ): Promise<ProductServiceFindByUserResponse> {

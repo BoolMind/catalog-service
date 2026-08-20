@@ -1,8 +1,10 @@
 import {
   Inject,
   Injectable,
+  OnModuleInit,
 } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
 
 import {
   UserServiceClient,
@@ -10,24 +12,20 @@ import {
   UserServiceGetByIdRequest,
 } from '@ecommerce/contracts/generated/ecommerce/user/v1/user';
 
-import { callGrpc } from '@ecommerce/common';
+import { callGrpc } from '@ecommerce/common'
 
 @Injectable()
-export class UserGrpcClient {
-  private userService?: UserServiceClient;
+export class UserGrpcClient implements OnModuleInit {
+  private userService!: UserServiceClient;
 
   constructor(
     @Inject('USER_SERVICE')
     private readonly client: ClientGrpc,
   ) {}
 
-  private getUserService(): UserServiceClient {
-    if (!this.userService) {
-      this.userService =
-        this.client.getService<UserServiceClient>('UserService');
-    }
-
-    return this.userService;
+  onModuleInit(): void {
+    this.userService =
+      this.client.getService<UserServiceClient>('UserService');
   }
 
   async getById(id: number): Promise<User> {
@@ -41,7 +39,7 @@ export class UserGrpcClient {
     };
 
     const response = await callGrpc(
-      this.getUserService().getById(request),
+      this.userService.getById(request),
       {
         source: 'user-service.UserService',
         timeoutMs: 5000,

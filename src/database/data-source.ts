@@ -15,6 +15,6 @@ export default new DataSource({
 
   logging: process.env.DB_LOGGING === 'true',
 
-  entities: ['src/**/*.entity.ts'],
+  entities: ['src*.entity.ts'],
   migrations: ['src/database/migrations/*.ts'],
 });

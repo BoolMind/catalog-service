@@ -21,12 +21,27 @@
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "paths": {
-      "@/*": ["src/*"],
-      "@common/*": ["src/common/*"],
-      "@config/*": ["src/config/*"],
-      "@database/*": ["src/database/*"],
-      "@catalog/*": ["src/catalog/*"],
-      "@generated/*": ["src/generated/*"]
-    }
+      "@/*": [
+        "src/*"
+      ],
+      "@common/*": [
+        "src/common/*"
+      ],
+      "@config/*": [
+        "src/config/*"
+      ],
+      "@database/*": [
+        "src/database/*"
+      ],
+      "@catalog/*": [
+        "src/catalog/*"
+      ],
+      "@generated/*": [
+        "src/generated/*"
+      ]
+    },
+    "types": [
+      "node"
+    ]
   }
 }

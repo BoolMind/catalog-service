@@ -12,7 +12,7 @@ import { Product } from '../../products/entities';
 export class Category extends AppBaseEntity {
   @Column({
     type: 'varchar',
-    length: 100,
+    length: 255,
     unique: true,
   })
   name!: string;

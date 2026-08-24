@@ -1,13 +1,11 @@
-import {
-  Inject,
-  Injectable,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 
 import {
   UserServiceClient,
   User,
   UserServiceGetByIdRequest,
+  UserServiceGetByIdResponse
 } from '@ecommerce/contracts/generated/ecommerce/user/v1/user';
 
 import { callGrpc } from '@ecommerce/common';
@@ -31,27 +29,21 @@ export class UserGrpcClient {
   }
 
   async getById(id: number): Promise<User> {
-    console.log(
-      'USER GRPC CLIENT - calling getById:',
-      id,
-    );
+    console.log('USER GRPC CLIENT - calling getById:', id);
 
     const request: UserServiceGetByIdRequest = {
       id,
     };
 
-    const response = await callGrpc(
-      this.getUserService().getById(request),
-      {
-        source: 'user-service.UserService',
-        timeoutMs: 5000,
-      },
-    );
+   const response = await callGrpc<UserServiceGetByIdResponse>(
+  this.getUserService().getById(request),
+  {
+    source: 'user-service.UserService',
+    timeoutMs: 5000,
+  },
+);
 
-    console.log(
-      'USER GRPC CLIENT - response:',
-      response,
-    );
+    console.log('USER GRPC CLIENT - response:', response);
 
     if (!response.user) {
       throw new Error(`User ${id} was not found`);

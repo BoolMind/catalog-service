@@ -21,7 +21,9 @@ export const envValidationSchema = Joi.object({
   GRPC_HOST: Joi.string().required(),
   GRPC_PORT: Joi.number().port().default(50051),
 
-  RABBITMQ_URL: Joi.string().uri({ scheme: ['amqp', 'amqps'] }).required(),
+  RABBITMQ_URL: Joi.string()
+    .uri({ scheme: ['amqp', 'amqps'] })
+    .required(),
   USER_GRPC_HOST: Joi.string().required(),
   USER_GRPC_PORT: Joi.number().port().required(),
 });

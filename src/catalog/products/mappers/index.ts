@@ -1,1 +1,1 @@
-export * from './products.mapper'
+export * from './products.mapper';

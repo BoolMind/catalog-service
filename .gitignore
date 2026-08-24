@@ -1,59 +1,26 @@
-#########################################
-# Dependencies
-#########################################
-
 node_modules/
-
-#########################################
-# Build
-#########################################
-
 dist/
-
 coverage/
 
-#########################################
-# Environment
-#########################################
-
 .env
-
-#########################################
-# Generated files
-#########################################
+.env.*
+!.env.example
 
 src/generated/
-
-#########################################
-# IDE
-#########################################
-
-.vscode/
-
-.idea/
-
-#########################################
-# OS
-#########################################
-
-.DS_Store
-
-Thumbs.db
-
-#########################################
-# Logs
-#########################################
+generated/
 
 *.log
-
 npm-debug.log*
-
 yarn-debug.log*
-
+yarn-error.log*
 pnpm-debug.log*
 
+*.tsbuildinfo
 
-# Generated protobuf/ts-proto code
-catalog-service/generated/
-user-service/generated/
-api-gateway/generated/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+*.bak
+*.save

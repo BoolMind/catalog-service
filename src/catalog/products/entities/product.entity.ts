@@ -1,10 +1,4 @@
-import {
-  Column,
-  Entity,
-  Index,
-  JoinColumn,
-  ManyToOne,
-} from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 
 import { AppBaseEntity } from '@ecommerce/common';
 
@@ -52,15 +46,11 @@ export class Product extends AppBaseEntity {
   @Index()
   categoryId!: number;
 
-  @ManyToOne(
-    () => Category,
-    (category) => category.products,
-    {
-      nullable: false,
-      eager: false,
-      onDelete: 'RESTRICT',
-    },
-  )
+  @ManyToOne(() => Category, (category) => category.products, {
+    nullable: false,
+    eager: false,
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({
     name: 'categoryId',
   })

@@ -1,10 +1,5 @@
-import { UseFilters, UseInterceptors } from '@nestjs/common';
-
 import {
   GrpcController,
-  GrpcExceptionFilter,
-  GrpcLoggingInterceptor,
-  GrpcValidationInterceptor,
   ValidateGrpc,
   toGrpcDeleteResponse,
   toGrpcPageMeta,
@@ -32,13 +27,9 @@ import { SortOrder } from '@ecommerce/contracts/generated/ecommerce/common/v1/co
 import { CategoriesService } from './categories.service';
 import { categoryToGrpc } from './mappers/categories.mapper';
 
-@UseFilters(GrpcExceptionFilter)
-@UseInterceptors(GrpcLoggingInterceptor, GrpcValidationInterceptor)
 @GrpcController('CategoryService')
 export class CategoriesController {
-  constructor(
-    private readonly categoriesService: CategoriesService,
-  ) {}
+  constructor(private readonly categoriesService: CategoriesService) {}
 
   @ValidateGrpc('ecommerce.catalog.v1.CategoryServiceCreateRequest')
   async create(
@@ -55,8 +46,7 @@ export class CategoriesController {
   async getById(
     request: CategoryServiceGetByIdRequest,
   ): Promise<CategoryServiceGetByIdResponse> {
-    const category =
-      await this.categoriesService.findOneOrFail(request.id);
+    const category = await this.categoriesService.findOneOrFail(request.id);
 
     return {
       category: categoryToGrpc(category),
@@ -67,8 +57,7 @@ export class CategoriesController {
   async findAll(
     _request: CategoryServiceFindAllRequest,
   ): Promise<CategoryServiceFindAllResponse> {
-    const categories =
-      await this.categoriesService.findAll();
+    const categories = await this.categoriesService.findAll();
 
     return {
       items: categories.map(categoryToGrpc),
@@ -81,8 +70,7 @@ export class CategoriesController {
   ): Promise<CategoryServiceUpdateResponse> {
     const { id, ...data } = request;
 
-    const category =
-      await this.categoriesService.update(id, data);
+    const category = await this.categoriesService.update(id, data);
 
     return {
       category: categoryToGrpc(category),
@@ -102,8 +90,7 @@ export class CategoriesController {
   async restore(
     request: CategoryServiceRestoreRequest,
   ): Promise<CategoryServiceRestoreResponse> {
-    const category =
-      await this.categoriesService.restore(request.id);
+    const category = await this.categoriesService.restore(request.id);
 
     return {
       category: categoryToGrpc(category),

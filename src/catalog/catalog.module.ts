@@ -16,7 +16,9 @@ import { StockConsumerController } from '../messaging/rabbitmq/stock.consumer';
 
 import { UserGrpcClient } from '../grpc/user.grpc.client';
 
-const contractsPath = require.resolve('@ecommerce/contracts/package.json').replace('/package.json', '');
+const contractsPath = require
+  .resolve('@ecommerce/contracts/package.json')
+  .replace('/package.json', '');
 
 @Module({
   imports: [
@@ -52,7 +54,11 @@ const contractsPath = require.resolve('@ecommerce/contracts/package.json').repla
     ]),
   ],
 
-  controllers: [CategoriesController, ProductsController, StockConsumerController],
+  controllers: [
+    CategoriesController,
+    ProductsController,
+    StockConsumerController,
+  ],
 
   providers: [CategoriesService, ProductsService, StockService, UserGrpcClient],
 

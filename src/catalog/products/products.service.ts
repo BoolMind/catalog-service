@@ -61,7 +61,6 @@ export class ProductsService extends BaseService<
     return super.update(id, data);
   }
 
-  
   async search(keyword: string): Promise<Product[]> {
     const result = await this.paginate({
       page: 1,
@@ -72,7 +71,6 @@ export class ProductsService extends BaseService<
     return result.data;
   }
 
-  
   async findByUser(userId: number): Promise<Product[]> {
     await this.userGrpcClient.getById(userId);
 

@@ -1,8 +1,4 @@
-import {
-  Column,
-  Entity,
-  OneToMany,
-} from 'typeorm';
+import { Column, Entity, OneToMany } from 'typeorm';
 
 import { AppBaseEntity } from '@ecommerce/common';
 
@@ -23,9 +19,6 @@ export class Category extends AppBaseEntity {
   })
   description!: string | null;
 
-  @OneToMany(
-    () => Product,
-    (product) => product.category,
-  )
+  @OneToMany(() => Product, (product) => product.category)
   products!: Product[];
 }

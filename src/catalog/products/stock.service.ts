@@ -15,10 +15,12 @@ export class StockService {
 
   constructor(private readonly dataSource: DataSource) {}
 
-  
+  private static readonly MAX_RESERVE_RETRY_ATTEMPTS = 3;
+
   async reserve(
     orderId: number,
     items: StockReserveItem[],
+    attempt = 0,
   ): Promise<StockReserveResult> {
     if (!Number.isInteger(orderId) || orderId <= 0) {
       return {
@@ -34,7 +36,6 @@ export class StockService {
       };
     }
 
-    
     const normalizedItems = new Map<number, number>();
 
     for (const item of items) {
@@ -74,113 +75,143 @@ export class StockService {
 
     try {
       return await this.dataSource.transaction(async (manager) => {
-      const reservationRepo = manager.getRepository(StockReservationEntity);
-      const productRepo = manager.getRepository(Product);
+        const reservationRepo = manager.getRepository(StockReservationEntity);
+        const productRepo = manager.getRepository(Product);
 
-      
-      const existing = await reservationRepo.find({
-        where: { orderId },
-      });
+        const existing = await reservationRepo.find({
+          where: { orderId },
+        });
 
-      if (existing.length > 0) {
-        const anyStillReserved = existing.some(
-          (reservation) =>
-            reservation.status === ReservationStatus.RESERVED,
-        );
+        if (existing.length > 0) {
+          const anyStillReserved = existing.some(
+            (reservation) => reservation.status === ReservationStatus.RESERVED,
+          );
 
-        this.logger.warn(
-          `Duplicate stock.reserve for order ${orderId} -- returning recorded outcome`,
-        );
+          this.logger.warn(
+            `Duplicate stock.reserve for order ${orderId} -- returning recorded outcome`,
+          );
 
-        if (!anyStillReserved) {
-          return { success: false };
+          if (!anyStillReserved) {
+            return { success: false };
+          }
+
+          const reservedProducts = await productRepo.findByIds(
+            existing.map((r) => r.productId),
+          );
+          const priceById = new Map(reservedProducts.map((p) => [p.id, p]));
+
+          return {
+            success: true,
+            items: existing
+              .filter((r) => r.status === ReservationStatus.RESERVED)
+              .map((r) => ({
+                productId: r.productId,
+                quantity: r.quantity,
+                unitPrice: r.unitPrice,
+              })),
+          };
         }
 
-        const reservedProducts = await productRepo.findByIds(
-          existing.map((r) => r.productId),
-        );
-        const priceById = new Map(reservedProducts.map((p) => [p.id, p]));
+        const lockedProducts = new Map<number, Product>();
+
+        for (const item of sortedItems) {
+          const product = await productRepo.findOne({
+            where: { id: item.productId },
+            lock: { mode: 'pessimistic_write' },
+          });
+
+          if (!product) {
+            return {
+              success: false,
+              reason: `PRODUCT_NOT_FOUND:${item.productId}`,
+            };
+          }
+
+          if (product.availableStock < item.quantity) {
+            return {
+              success: false,
+              reason: `INSUFFICIENT_STOCK:${item.productId}`,
+            };
+          }
+
+          lockedProducts.set(item.productId, product);
+        }
+
+        const reservedItems: StockReservedItemPrice[] = [];
+
+        for (const item of sortedItems) {
+          const product = lockedProducts.get(item.productId)!;
+
+          product.reservedStock += item.quantity;
+
+          await productRepo.save(product);
+
+          const reservation = reservationRepo.create({
+            orderId,
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: Number(product.price).toFixed(2),
+            status: ReservationStatus.RESERVED,
+          });
+
+          await reservationRepo.save(reservation);
+
+          reservedItems.push({
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: Number(product.price).toFixed(2),
+          });
+        }
 
         return {
           success: true,
-          items: existing
-            .filter((r) => r.status === ReservationStatus.RESERVED)
-            .map((r) => ({
-              productId: r.productId,
-              quantity: r.quantity,
-              unitPrice: r.unitPrice,
-            })),
+          items: reservedItems,
         };
-      }
-
-      const lockedProducts = new Map<number, Product>();
-
-      
-      for (const item of sortedItems) {
-        const product = await productRepo.findOne({
-          where: { id: item.productId },
-          lock: { mode: 'pessimistic_write' },
-        });
-
-        if (!product) {
-          return {
-            success: false,
-            reason: `PRODUCT_NOT_FOUND:${item.productId}`,
-          };
-        }
-
-        if (product.availableStock < item.quantity) {
-          return {
-            success: false,
-            reason: `INSUFFICIENT_STOCK:${item.productId}`,
-          };
-        }
-
-        lockedProducts.set(item.productId, product);
-      }
-
-      
-      const reservedItems: StockReservedItemPrice[] = [];
-
-      for (const item of sortedItems) {
-        const product = lockedProducts.get(item.productId)!;
-
-        product.reservedStock += item.quantity;
-
-        await productRepo.save(product);
-
-        const reservation = reservationRepo.create({
-          orderId,
-          productId: item.productId,
-          quantity: item.quantity,
-          unitPrice: Number(product.price).toFixed(2),
-          status: ReservationStatus.RESERVED,
-        });
-
-        await reservationRepo.save(reservation);
-
-        reservedItems.push({
-          productId: item.productId,
-          quantity: item.quantity,
-          unitPrice: Number(product.price).toFixed(2),
-        });
-      }
-
-      return {
-        success: true,
-        items: reservedItems,
-      };
       });
     } catch (error) {
       if ((error as { code?: string }).code === 'ER_DUP_ENTRY') {
-        return this.reserve(orderId, items);
+        if (attempt >= StockService.MAX_RESERVE_RETRY_ATTEMPTS) {
+          this.logger.error(
+            `stock.reserve for order ${orderId} hit ER_DUP_ENTRY ` +
+              `${StockService.MAX_RESERVE_RETRY_ATTEMPTS} times in a row, giving up`,
+          );
+          throw error;
+        }
+
+        return this.reserve(orderId, items, attempt + 1);
       }
 
       throw error;
     }
   }
 
-  
+  async addStock(productId: number, quantity: number): Promise<Product> {
+    if (!Number.isInteger(productId) || productId <= 0) {
+      throw new Error('INVALID_PRODUCT_ID');
+    }
+
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      throw new Error('INVALID_QUANTITY');
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const productRepo = manager.getRepository(Product);
+
+      const product = await productRepo.findOne({
+        where: { id: productId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!product) {
+        throw new Error(`PRODUCT_NOT_FOUND:${productId}`);
+      }
+
+      product.totalStock += quantity;
+
+      return productRepo.save(product);
+    });
+  }
+
   async release(orderId: number): Promise<void> {
     if (!Number.isInteger(orderId) || orderId <= 0) {
       throw new Error('INVALID_ORDER_ID');
@@ -190,7 +221,6 @@ export class StockService {
       const reservationRepo = manager.getRepository(StockReservationEntity);
       const productRepo = manager.getRepository(Product);
 
-      
       const reservations = await reservationRepo.find({
         where: {
           orderId,
@@ -211,7 +241,6 @@ export class StockService {
         return;
       }
 
-      
       for (const reservation of reservations) {
         const product = await productRepo.findOne({
           where: {
@@ -223,14 +252,12 @@ export class StockService {
         });
 
         if (!product) {
-          
           throw new Error(
             `PRODUCT_NOT_FOUND_DURING_RELEASE:${reservation.productId}`,
           );
         }
 
         if (product.reservedStock < reservation.quantity) {
-          
           throw new Error(
             `RESERVED_STOCK_INCONSISTENCY:${reservation.productId}`,
           );

@@ -1,16 +1,14 @@
-import { UseFilters, UseInterceptors } from '@nestjs/common';
-
 import {
   GrpcController,
-  GrpcExceptionFilter,
-  GrpcLoggingInterceptor,
-  GrpcValidationInterceptor,
   ValidateGrpc,
   toGrpcDeleteResponse,
   toGrpcPageMeta,
 } from '@ecommerce/common';
+import { Controller } from '@nestjs/common';
 
 import {
+  ProductServiceAddStockRequest,
+  ProductServiceAddStockResponse,
   ProductServiceCreateRequest,
   ProductServiceCreateResponse,
   ProductServiceDeleteRequest,
@@ -29,15 +27,17 @@ import {
   ProductServiceUpdateResponse,
 } from '@ecommerce/contracts/generated/ecommerce/catalog/v1/catalog';
 
+import { toTypeOrmOrder } from '@ecommerce/common';
+
 import { ProductsService } from './products.service';
+import { StockService } from './stock.service';
 import { productToGrpc } from './mappers/products.mapper';
 
-@UseFilters(GrpcExceptionFilter)
-@UseInterceptors(GrpcLoggingInterceptor, GrpcValidationInterceptor)
 @GrpcController('ProductService')
 export class ProductsController {
   constructor(
     private readonly productsService: ProductsService,
+    private readonly stockService: StockService,
   ) {}
 
   @ValidateGrpc('ecommerce.catalog.v1.ProductServiceCreateRequest')
@@ -55,9 +55,7 @@ export class ProductsController {
   async getById(
     request: ProductServiceGetByIdRequest,
   ): Promise<ProductServiceGetByIdResponse> {
-    const product = await this.productsService.findOneOrFail(
-      request.id,
-    );
+    const product = await this.productsService.findOneOrFail(request.id);
 
     return {
       product: productToGrpc(product),
@@ -90,9 +88,7 @@ export class ProductsController {
   async restore(
     request: ProductServiceRestoreRequest,
   ): Promise<ProductServiceRestoreResponse> {
-    const product = await this.productsService.restore(
-      request.id,
-    );
+    const product = await this.productsService.restore(request.id);
 
     return {
       product: productToGrpc(product),
@@ -108,12 +104,7 @@ export class ProductsController {
       limit: request.limit,
       search: request.search,
       orderBy: request.orderBy,
-      order:
-        request.order === 1
-          ? 'ASC'
-          : request.order === 2
-            ? 'DESC'
-            : undefined,
+      order: toTypeOrmOrder(request.order),
     });
 
     return {
@@ -139,12 +130,24 @@ export class ProductsController {
   async findByUser(
     request: ProductServiceFindByUserRequest,
   ): Promise<ProductServiceFindByUserResponse> {
-    const products = await this.productsService.findByUser(
-      request.userId,
-    );
+    const products = await this.productsService.findByUser(request.userId);
 
     return {
       items: products.map(productToGrpc),
+    };
+  }
+
+  @ValidateGrpc('ecommerce.catalog.v1.ProductServiceAddStockRequest')
+  async addStock(
+    request: ProductServiceAddStockRequest,
+  ): Promise<ProductServiceAddStockResponse> {
+    const product = await this.stockService.addStock(
+      request.productId,
+      request.quantity,
+    );
+
+    return {
+      product: productToGrpc(product),
     };
   }
 }

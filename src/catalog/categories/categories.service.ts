@@ -1,4 +1,3 @@
-
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -7,9 +6,7 @@ import { BaseService } from '@ecommerce/common';
 
 import { Category } from './entities/category.entity';
 
-import {
-  CategoryAlreadyExistsException,
-} from './exceptions';
+import { CategoryAlreadyExistsException } from './exceptions';
 
 import {
   CreateCategoryData,
@@ -29,9 +26,7 @@ export class CategoriesService extends BaseService<
     super(repository);
   }
 
-  protected override searchableFields(): (
-    keyof Category
-  )[] {
+  protected override searchableFields(): (keyof Category)[] {
     return ['name', 'description'];
   }
 
@@ -39,9 +34,7 @@ export class CategoriesService extends BaseService<
     return 'Category';
   }
 
-  async create(
-    data: CreateCategoryData,
-  ): Promise<Category> {
+  async create(data: CreateCategoryData): Promise<Category> {
     const existing = await this.findOne({
       where: {
         name: data.name,
@@ -49,25 +42,16 @@ export class CategoriesService extends BaseService<
     });
 
     if (existing) {
-      throw new CategoryAlreadyExistsException(
-        data.name,
-      );
+      throw new CategoryAlreadyExistsException(data.name);
     }
 
     return super.create(data);
   }
 
-  async update(
-    id: number,
-    data: UpdateCategoryData,
-  ): Promise<Category> {
-    const category =
-      await this.findOneOrFail(id);
+  async update(id: number, data: UpdateCategoryData): Promise<Category> {
+    const category = await this.findOneOrFail(id);
 
-    if (
-      data.name !== undefined &&
-      data.name !== category.name
-    ) {
+    if (data.name !== undefined && data.name !== category.name) {
       const existing = await this.findOne({
         where: {
           name: data.name,
@@ -75,13 +59,10 @@ export class CategoriesService extends BaseService<
       });
 
       if (existing) {
-        throw new CategoryAlreadyExistsException(
-          data.name,
-        );
+        throw new CategoryAlreadyExistsException(data.name);
       }
     }
 
     return super.update(id, data);
   }
 }
-

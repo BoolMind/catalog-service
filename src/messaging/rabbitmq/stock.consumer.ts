@@ -1,5 +1,16 @@
-import { Controller, Logger, UseFilters, UseInterceptors } from '@nestjs/common';
-import { Ctx, EventPattern, MessagePattern, Payload, RmqContext } from '@nestjs/microservices';
+import {
+  Controller,
+  Logger,
+  UseFilters,
+  UseInterceptors,
+} from '@nestjs/common';
+import {
+  Ctx,
+  EventPattern,
+  MessagePattern,
+  Payload,
+  RmqContext,
+} from '@nestjs/microservices';
 import {
   RpcExceptionFilter,
   STOCK_RELEASE_QUEUE,
@@ -12,7 +23,6 @@ import {
   StockReserveRequest,
   StockReserveResult,
 } from '../../catalog/products/interfaces';
-
 
 @Controller()
 @UseFilters(RpcExceptionFilter)
@@ -32,7 +42,9 @@ export class StockConsumerController {
 
     try {
       this.assertReserveRequest(data);
-      this.logger.log(`stock.reserve for order ${data.orderId}: ${JSON.stringify(data.items)}`);
+      this.logger.log(
+        `stock.reserve for order ${data.orderId}: ${JSON.stringify(data.items)}`,
+      );
       const result = await this.stockService.reserve(data.orderId, data.items);
       channel.ack(originalMsg);
       return result;
@@ -47,7 +59,10 @@ export class StockConsumerController {
   }
 
   @EventPattern(STOCK_RELEASE_QUEUE)
-  async releaseStock(@Payload() data: StockReleaseRequest, @Ctx() context: RmqContext): Promise<void> {
+  async releaseStock(
+    @Payload() data: StockReleaseRequest,
+    @Ctx() context: RmqContext,
+  ): Promise<void> {
     const channel = context.getChannelRef();
     const originalMsg = context.getMessage();
 

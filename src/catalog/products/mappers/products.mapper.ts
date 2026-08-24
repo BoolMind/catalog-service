@@ -11,6 +11,9 @@ export function productToGrpc(product: ProductEntity): ProductGrpc {
     price: Number(product.price),
     categoryId: product.categoryId,
     userId: product.userId,
+    totalStock: product.totalStock,
+    reservedStock: product.reservedStock,
+    availableStock: product.availableStock,
     createdAt: dateToTimestamp(product.createdAt),
     updatedAt: dateToTimestamp(product.updatedAt),
 

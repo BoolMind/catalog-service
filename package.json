@@ -21,7 +21,7 @@
   "dependencies": {
     "@bufbuild/protobuf": "^2.13.0",
     "@bufbuild/protovalidate": "^1.2.0",
-    "@ecommerce/common": "file:../common/ecommerce-common-1.1.1.tgz",
+    "@ecommerce/common": "file:../common/ecommerce-common-1.2.0.tgz",
     "@ecommerce/contracts": "file:../ecommerce-contracts/ecommerce-contracts-1.1.1.tgz",
     "@nestjs/config": "^4.0.4",
     "@nestjs/platform-express": "^11.2.1",

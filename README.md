@@ -1,20 +1,24 @@
 # Catalog Service
 
-The Catalog Service manages products, categories, and product stock for the Ecommerce microservices system.
+The Catalog Service manages products, categories, product stock, and stock reservations for the Ecommerce microservices system.
 
-It exposes gRPC APIs for catalog operations and communicates with other services through the shared Protocol Buffer contracts.
+It exposes gRPC APIs through the shared Protocol Buffer contracts and communicates with other services through gRPC and RabbitMQ.
 
 ## Responsibilities
 
-- Manage products
-- Manage product categories
+- Create, retrieve, update, and delete products
+- Restore products
+- Search, filter, and paginate products
+- Create, retrieve, update, and delete categories
+- Restore categories
 - Manage product stock
-- Handle stock reservations
+- Manage stock reservations
+- Consume stock-related messages through RabbitMQ
+- Communicate with the User Service through gRPC
 - Validate incoming gRPC requests
 - Persist catalog data using TypeORM
-- Communicate with the User Service through gRPC
-- Publish and consume messaging events related to catalog operations
-- Provide centralized exception handling
+- Manage database schema through migrations
+- Handle product and category domain errors
 - Provide logging and distributed tracing
 - Provide health monitoring
 
@@ -22,55 +26,90 @@ It exposes gRPC APIs for catalog operations and communicates with other services
 
 ```text
 catalog-service/
+├── docker-compose.yml
+├── Dockerfile
+├── eslint.config.mjs
+├── nest-cli.json
+├── package.json
+├── package-lock.json
+├── README.md
 ├── src/
+│   ├── app.module.ts
+│   │
 │   ├── catalog/
-│   │   ├── categories/
-│   │   │   ├── entities/
-│   │   │   ├── exceptions/
-│   │   │   ├── interfaces/
-│   │   │   ├── mappers/
-│   │   │   ├── categories.controller.ts
-│   │   │   └── categories.service.ts
-│   │   │
-│   │   ├── products/
-│   │   │   ├── entities/
-│   │   │   ├── exceptions/
-│   │   │   ├── interfaces/
-│   │   │   ├── mappers/
-│   │   │   ├── products.controller.ts
-│   │   │   ├── products.service.ts
-│   │   │   └── stock.service.ts
-│   │   │
 │   │   ├── catalog.module.ts
-│   │   └── index.ts
+│   │   ├── index.ts
+│   │   │
+│   │   ├── categories/
+│   │   │   ├── categories.controller.ts
+│   │   │   ├── categories.service.ts
+│   │   │   ├── entities/
+│   │   │   │   ├── category.entity.ts
+│   │   │   │   └── index.ts
+│   │   │   ├── exceptions/
+│   │   │   │   ├── category.error-code.enum.ts
+│   │   │   │   ├── category-exists.exception.ts
+│   │   │   │   ├── category-not-found.exception.ts
+│   │   │   │   └── index.ts
+│   │   │   ├── index.ts
+│   │   │   ├── interfaces/
+│   │   │   │   ├── category-service.interface.ts
+│   │   │   │   └── index.ts
+│   │   │   └── mappers/
+│   │   │       ├── categories.mapper.ts
+│   │   │       └── index.ts
+│   │   │
+│   │   └── products/
+│   │       ├── entities/
+│   │       │   ├── index.ts
+│   │       │   ├── product.entity.ts
+│   │       │   └── stock-reservation.entity.ts
+│   │       ├── exceptions/
+│   │       │   ├── index.ts
+│   │       │   ├── product-already-exists.exception.ts
+│   │       │   ├── product-error-code.enum.ts
+│   │       │   └── product-not-found.exception.ts
+│   │       ├── index.ts
+│   │       ├── interfaces/
+│   │       │   ├── index.ts
+│   │       │   ├── product-service.interface.ts
+│   │       │   ├── reservation-status.enum.ts
+│   │       │   └── stock.interface.ts
+│   │       ├── mappers/
+│   │       │   ├── index.ts
+│   │       │   └── products.mapper.ts
+│   │       ├── products.controller.ts
+│   │       ├── products.service.ts
+│   │       └── stock.service.ts
 │   │
 │   ├── config/
+│   │   ├── app.config.ts
+│   │   ├── database.config.ts
+│   │   ├── env.validation.ts
+│   │   ├── grpc.config.ts
+│   │   └── index.ts
+│   │
 │   ├── database/
-│   │   ├── migrations/
+│   │   ├── database.module.ts
 │   │   ├── data-source.ts
-│   │   └── database.module.ts
+│   │   ├── index.ts
+│   │   └── migrations/
+│   │       ├── 1786445408296-InitialCatalogSchema.ts
+│   │       ├── 1786445408300-CreateStockReservations.ts
+│   │       ├── 1786445408310-AddProductStockColumns.ts
+│   │       └── 1787160000010-HardenStockReservations.ts
 │   │
 │   ├── grpc/
 │   │   └── user.grpc.client.ts
 │   │
-│   ├── messaging/
-│   │   └── rabbitmq/
-│   │       └── stock.consumer.ts
+│   ├── main.ts
 │   │
-│   ├── app.module.ts
-│   └── main.ts
+│   └── messaging/
+│       └── rabbitmq/
+│           └── stock.consumer.ts
 │
-├── .env.example
-├── .gitignore
-├── .dockerignore
-├── Dockerfile
-├── docker-compose.yml
-├── nest-cli.json
-├── package.json
-├── package-lock.json
-├── tsconfig.json
 ├── tsconfig.build.json
-└── README.md
+└── tsconfig.json
 ```
 
 ## Products
@@ -86,14 +125,31 @@ Product operations include:
 - Delete products
 - Restore products
 - Paginate products
-- Search and filter products
+- Search products
+- Filter products
 - Manage product stock
 
-Product persistence is handled through TypeORM.
+Product business logic is implemented in:
+
+```text
+src/catalog/products/products.service.ts
+```
+
+The product gRPC endpoints are implemented in:
+
+```text
+src/catalog/products/products.controller.ts
+```
+
+Product persistence is handled through:
+
+```text
+src/catalog/products/entities/product.entity.ts
+```
 
 ## Categories
 
-The service provides category management functionality.
+The Catalog Service provides category management functionality.
 
 Category operations include:
 
@@ -105,7 +161,23 @@ Category operations include:
 - Restore categories
 - Paginate categories
 
-Categories are persisted in the catalog database.
+Category business logic is implemented in:
+
+```text
+src/catalog/categories/categories.service.ts
+```
+
+The category gRPC endpoints are implemented in:
+
+```text
+src/catalog/categories/categories.controller.ts
+```
+
+Category persistence is handled through:
+
+```text
+src/catalog/categories/entities/category.entity.ts
+```
 
 ## Stock Management
 
@@ -113,108 +185,159 @@ The Catalog Service manages product inventory and stock reservations.
 
 Stock functionality includes:
 
-- Maintaining available product stock
+- Managing available product stock
 - Reserving stock
-- Releasing reservations
-- Confirming stock usage
-- Preventing invalid stock operations
-- Managing stock reservation records
+- Managing stock reservations
+- Tracking reservation status
+- Handling stock-related operations
 
-Stock reservations are persisted separately from product records.
+Stock business logic is implemented in:
+
+```text
+src/catalog/products/stock.service.ts
+```
+
+Stock reservation persistence is handled through:
+
+```text
+src/catalog/products/entities/stock-reservation.entity.ts
+```
+
+Reservation states are defined in:
+
+```text
+src/catalog/products/interfaces/reservation-status.enum.ts
+```
+
+## RabbitMQ Messaging
+
+The Catalog Service uses RabbitMQ for stock-related messaging.
+
+RabbitMQ integration is located under:
+
+```text
+src/messaging/rabbitmq/
+```
+
+The stock consumer is implemented in:
+
+```text
+src/messaging/rabbitmq/stock.consumer.ts
+```
+
+The consumer receives stock-related messages and coordinates them with the catalog stock management functionality.
+
+The Catalog Service does not contain Kafka messaging implementation.
+
+## gRPC Communication
+
+The Catalog Service exposes gRPC endpoints defined by the Protocol Buffer contracts provided by `@ecommerce/contracts`.
+
+The gRPC configuration is located in:
+
+```text
+src/config/grpc.config.ts
+```
+
+The service also contains a gRPC client for communication with the User Service:
+
+```text
+src/grpc/user.grpc.client.ts
+```
+
+This allows the Catalog Service to communicate with the User Service through service-to-service gRPC communication.
 
 ## Database
 
-The service uses TypeORM for database access.
+The Catalog Service uses TypeORM for database access and persistence.
 
-Database configuration is located under:
+Database configuration is located in:
 
 ```text
-src/config/
+src/config/database.config.ts
 ```
 
-Database-related modules and migrations are located under:
+Database initialization and TypeORM configuration are located under:
 
 ```text
 src/database/
 ```
 
-Migrations are used to create and evolve the catalog database schema.
+The service uses database migrations to create and evolve the catalog database schema.
 
-## gRPC Communication
+Migrations include:
 
-The Catalog Service exposes gRPC endpoints defined by the contracts in `ecommerce-contracts`.
+- Initial catalog schema
+- Stock reservation schema
+- Product stock columns
+- Stock reservation hardening
 
-The service also communicates with the User Service through gRPC.
-
-The User Service client is located under:
-
-```text
-src/grpc/
-```
-
-The service uses the Protocol Buffer definitions provided by `@ecommerce/contracts`.
-
-## Messaging
-
-The Catalog Service uses RabbitMQ for messaging related to stock operations.
-
-Messaging-related code is located under:
+Migrations are located under:
 
 ```text
-src/messaging/
+src/database/migrations/
 ```
-
-Stock-related messages are consumed by the catalog service to coordinate inventory operations with other parts of the system.
 
 ## Validation
 
-Incoming gRPC requests are validated through the shared validation infrastructure.
+Incoming gRPC requests are validated using the shared validation infrastructure provided by `@ecommerce/common`.
 
-The service uses the shared gRPC validation interceptor and contract-level validation.
+Validation includes:
 
-Validation-related behavior is applied through:
-
-- gRPC validation interceptors
 - Protocol Buffer validation
+- gRPC request validation
 - Service-level validation
-- Domain-specific exceptions
+- Domain-specific validation
+
+Invalid requests are rejected before reaching the relevant business logic.
 
 ## Error Handling
 
-The service uses centralized gRPC exception handling provided by `@ecommerce/common`.
+The Catalog Service uses centralized exception handling provided by `@ecommerce/common`.
 
-Domain-specific catalog exceptions are located under:
+Domain-specific exceptions are implemented for products and categories.
+
+Category exceptions are located under:
 
 ```text
 src/catalog/categories/exceptions/
+```
+
+Product exceptions are located under:
+
+```text
 src/catalog/products/exceptions/
 ```
 
-These exceptions cover cases such as:
+Category errors include:
 
-- Category not found
 - Category already exists
-- Product not found
+- Category not found
+
+Product errors include:
+
 - Product already exists
-- Invalid stock operations
+- Product not found
 
-## Health Checks
-
-The service includes the shared health module provided by `@ecommerce/common`.
-
-Health functionality is used to monitor the availability of the service and its required infrastructure.
+Error codes are defined through the corresponding error-code enums.
 
 ## Logging
 
-The Catalog Service uses the shared application logger provided by `@ecommerce/common`.
+The Catalog Service uses the shared logging infrastructure provided by `@ecommerce/common`.
 
-Logging is configured during application bootstrap and is available throughout the service.
+Logging is initialized during application startup and is available throughout the service.
 
-## Tracing
+## Distributed Tracing
 
 Distributed tracing is initialized during application startup.
 
-The service name is configured through the `SERVICE_NAME` environment variable.
+The service uses the configured service name to allow requests to be correlated across the Ecommerce microservices system.
+
+## Health Monitoring
+
+The Catalog Service uses the shared health infrastructure provided by `@ecommerce/common`.
+
+Health monitoring allows the availability of the service and its required dependencies to be monitored.
 
 ## Configuration
 
@@ -226,20 +349,20 @@ Configuration files are located under:
 src/config/
 ```
 
-The service configuration includes:
+The configuration includes:
 
 - Application configuration
 - Database configuration
 - gRPC configuration
 - Environment validation
 
-Create a local `.env` file using `.env.example` as a reference.
+Environment variables should be configured according to the project's environment configuration.
 
-Do not commit secrets or actual environment values.
+Secrets and actual environment values should not be committed to the repository.
 
 ## Installation
 
-Install dependencies:
+Install the project dependencies:
 
 ```bash
 npm install
@@ -271,7 +394,7 @@ npm run start:prod
 
 ## Type Checking
 
-Run TypeScript type checking without emitting files:
+Run TypeScript type checking without generating output:
 
 ```bash
 npx tsc --noEmit
@@ -287,7 +410,7 @@ npx prettier --write src
 
 ## Docker
 
-The service includes Docker configuration for running the application and its required infrastructure.
+The repository contains Docker configuration for running the Catalog Service.
 
 Build the Docker image:
 
@@ -295,35 +418,34 @@ Build the Docker image:
 docker build -t catalog-service .
 ```
 
-The repository also contains a Docker Compose configuration:
+The repository also contains:
 
 ```text
 docker-compose.yml
 ```
 
-## Environment
-
-Use `.env.example` as the reference for local environment configuration.
-
-Actual `.env` files and secrets should remain local and are excluded through `.gitignore`.
+which can be used for container-based local development.
 
 ## Shared Components
 
 ### `@ecommerce/common`
 
-Provides shared infrastructure and reusable functionality across the microservices system, including:
+The Catalog Service uses `@ecommerce/common` for shared infrastructure and reusable functionality across the Ecommerce microservices system.
+
+This includes functionality such as:
 
 - Logging
 - Exception handling
 - gRPC utilities
 - Health checks
+- Validation
 - Interceptors
 - Messaging utilities
 - Distributed tracing
-- Shared DTOs and interfaces
+- Shared utilities and interfaces
 
 ### `@ecommerce/contracts`
 
-Provides the Protocol Buffer contracts used for gRPC communication between services.
+The Catalog Service uses `@ecommerce/contracts` for the Protocol Buffer contracts used by its gRPC APIs and service-to-service communication.
 
-The Catalog Service uses these contracts for its gRPC API and communication with other microservices.
+These contracts provide the shared service definitions and message structures used across the Ecommerce microservices system.
